@@ -1,59 +1,53 @@
-# Nushell Config (Nu 0.109+)
+# nushell-config (Nu 0.109+)
 
-A reproducible Nushell configuration with **explicit wiring** and **clean layering**
+A reproducible Nushell configuration with explicit wiring:
 
-Nushell only auto-loads two files at startup:
+- Nushell loads `env.nu` first, then `config.nu`.
+- This repo keeps those as the only entry points and routes everything through
+  `init.nu`.
+- Per-machine overrides live in `local/` and are gitignored by default.
 
-- `$nu.env-path` (typically `~/.config/nushell/env.nu`)
-- `$nu.config-path` (typically `~/.config/nushell/config.nu`)
+## Repo layout
 
-This repo keeps those as thin wrappers (installed by `scripts/install.sh`) and loads
-everything else explicitly via `init.nu`.
+- `env.nu`
+  Environment variables only. Optionally generates cache files for integrations
+  (carapace/zoxide) and then applies `local/env.local.nu` if present.
 
-## Layout
+- `config.nu`
+  Sets `$env.config` (history, completions, etc.), sources integration caches,
+  then sources `init.nu`.
 
- `env.nu`  
-  Environment variables only (`$env.EDITOR`, `$env.PATH`, optional zoxide/carapace
-  cache generation, etc.). Loads `local/env.local.nu` if present.
+- `init.nu`
+  Orchestrates everything explicitly: `use` modules, `source` scripts, then
+  loads `local/init.local.nu` if present.
 
-- `config.nu`  
-  Shell configuration (`$env.config`, history, completions, hooks) and then
-  `source`s `init.nu`.
+- `modules/`
+  Reusable commands (`export def ...`) loaded via `use modules/<file>.nu *`.
 
-- `init.nu`  
-  The orchestrator. Explicitly `use`s modules and `source`s scripts. Loads
-  `local/init.local.nu` if present.
-
-- `modules/`  
-  Nushell “modules” (`export def ...`) loaded with `use ... *`.
-
-- `prompt.nu`, `alias.nu`  
-  Scripts loaded with `source` that install prompt and conservative aliases,
+- `prompt.nu`, `alias.nu`
+  Sourced scripts that define prompt behavior and conservative aliases.
 
 - `local/`
-  Per-machine overrides. `local/*.example.nu` are tracked templates,
-  `local/*.local.nu` are ignored by default (safe for machine-specific secrets).
+  Per-machine overrides:
+  - `local/*.example.nu` are tracked templates
+  - `local/*.local.nu` are ignored (safe for machine-specific settings)
 
-## Quick start
+## Install
 
 ```bash
+chmod +x ./scripts/install.sh
 ./scripts/install.sh
 nu
 ```
 
-# Verify what is actually loaded
-
-## Inside `nu`
+## Verify inside `nu`
 
 ```nu
 $nu.env-path
 $nu.config-path
 
-scope commands | where name =~ '^(edit|vscode|sublime|browse)$'
-scope aliases
+scope modules
+scope aliases | length
 $env.EDITOR
 $env.config.edit_mode
 ```
-
-If a command/alias is absent, it is not being loaded. This repo avoids implicit
-autoloading by design.

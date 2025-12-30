@@ -1,0 +1,5 @@
+# Per-machine overrides (tracked templates exist alongside these)
+local/*.local.nu
+
+# Optional local scratch
+.local/
